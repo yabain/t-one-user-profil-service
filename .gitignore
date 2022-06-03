@@ -1,0 +1,12 @@
+
+/serveur/
+
+/services/frontend-recherche/*
+!/services/frontend-recherche/Dockerfile
+
+/services/IA-Decideur/*
+!/services/IA-Decideur/Dockerfile
+
+/services/indexeur/*
+!/services/indexeur/Dockerfile
+

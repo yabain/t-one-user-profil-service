@@ -1,0 +1,214 @@
+version: "3"
+services:
+############## Serveurs et outils#########################
+
+##MySQL server for user database##
+  mysql_server:
+    image: mysql
+    container_name: mysql_server
+    networks:
+      - t_one_network
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_USER=keycloak
+      - MYSQL_PASSWORD=mysql_password
+      - MYSQL_DATABASE=keycloak_users_profils
+    volumes:
+      - "./serveur/mysql:/var/lib/mysql"
+    
+    command: --default-authentication-plugin=mysql_native_password
+
+  ##API Gateway to get access to backend##
+  krakend_api_gateway_server:
+    image: devopsfaith/krakend
+    container_name: krakend_api_gateway_server
+    hostname: krakend_api_gateway_server
+    ports:
+      - 8080:8080
+      - 1234:1234
+      - 8090:8090
+    networks:
+      - t_one_network
+    volumes:
+      - "./serveur/krakend/:/etc/krakend/"
+
+##SSO Serveur##
+  keycloak_server:
+    image: jboss/keycloak
+    container_name: keycloak_server
+    depends_on:
+      - mysql_server
+    ports:
+      - '8081:8080'
+      - "9990:9990"
+    networks:
+      - t_one_network
+    environment:
+      - KEYCLOAK_USER=admin
+      - KEYCLOAK_PASSWORD=admin
+      - KEYCLOAK_IMPORT=/tmp/realm-yaba-in.json
+      - DB_VENDOR=mysql
+      - DB_ADDR=mysql_server
+      - DB_DATABASE=keycloak_users_profils
+      - DB_USER=keycloak
+      - DB_PASSWORD=mysql_password
+    volumes:
+      - "./serveur/keycloak/realm-yaba-in.json:/tmp/realm-yaba-in.json"
+      - "./serveur/keycloak/data/:/opt/jboss/keycloak/standalone/data/"
+    command: [
+      '-Dkeycloak.migration.strategy=IGNORE_EXISTING',
+    ]
+
+  neo4j_server:
+    image: neo4j:4.4.7
+    container_name: neo4j_server
+    depends_on:
+      - keycloak_server
+    ports:
+      - 7474:7474
+      - 7687:7687
+    networks:
+      - t_one_network
+    environment:
+      - NEO4J_apoc_export_file_enabled=true
+      - NEO4J_apoc_import_file_enabled=true
+      - NEO4J_dbms_security_procedures_unrestricted=apoc.*,algo.*
+      - NEO4J_dbms_memory_heap_initial__size=512m
+      - NEO4J_dbms_memory_heap_max__size=2G
+      - NEO4J_apoc_uuid_enabled=true
+      - NEO4J_dbms_default__listen__address=0.0.0.0
+      - NEO4J_dbms_allow__upgrade=true
+      - NEO4J_dbms_default__database=neo4j
+
+      - NEO4J_AUTH=neo4j/neo4j_pass
+      - NEO4J_ACCEPT_LICENSE_AGREEMENT=yes
+    # volumes:
+      # - "./serveur/neo4j/data:/data"
+      # - "./serveur/neo4j/logs:/logs"
+
+
+  
+
+  # rabbitmq_server:
+  #   image: rabbitmq:3-management-alpine
+  #   container_name: rabbitmq_server
+  #   ports:
+  #     - 5672:5672
+  #     - 15672:15672
+  #   networks:
+  #     - t_one_network
+    #volumes:
+      #- "./serveur/rabbitmq/data/:/var/lib/rabbitmq"
+      #- "./serveur/rabbitmq/log/:/var/log/rabbitmiq"
+  
+  # redis_server:
+  #   image: "redis:alpine"
+  #   container_name: redis_server
+  #   ports:
+  #     - "6379:6379"
+  #   networks: 
+  #     - t_one_network
+  #   volumes: 
+  #     - "./serveur/redis/data/:/data"
+  #   command:
+  #     # Save if 100 keys are added in every 10 seconds
+  #     - "--save 10 100"
+
+  # redis_visualizer: # redis db visualization dashboard
+  #   container_name: redis_visualizer
+  #   depends_on:
+  #     - redis_server
+  #   image: redislabs/redisinsight
+  #   ports:
+  #     - 8082:8001
+  #   networks: 
+  #     - t_one_network
+    #volumes:
+    #  - ./serveur/redis/visualizer/:/db
+
+
+  # elastic_search_server:
+  #   build: "./services/elasticsearch"
+  #   container_name: elastic_search_server
+  #   ports:
+  #     - "9200:9200"
+  #     - "9300:9300"
+  #   networks:
+  #     - t_one_network
+  #   volumes:
+  #     - ./serveur/elasticsearch/data/:/usr/share/elasticsearch/data:rw
+  #   environment:
+  #     - bootstrap.memory_lock=true
+  #     - discovery.type=single-node
+  #     - "ES_JAVA_OPTS=-Xms2g -Xmx2g"
+  #     #- ELASTIC_PASSWORD=y_legal
+  #     #- xpack.security.enabled=true
+  #   ulimits:
+  #     memlock:
+  #       soft: -1
+  #       hard: -1
+  #   restart: unless-stopped
+
+  # kibana_server:
+  #   image: docker.elastic.co/kibana/kibana:7.16.2
+  #   container_name: kibana_server
+
+  #   depends_on:
+  #    - elastic_search_server
+  #   ports:
+  #     - "8083:5601"
+  #   networks:
+  #     - t_one_network
+  #   environment:
+  #     - ELASTICSEARCH_HOSTS=http://elastic_search_server:9200
+  #     #- ELASTICSEARCH_USERNAME=elastic
+  #     #- ELASTICSEARCH_PASSWORD=y_legal
+  #     - XPACK_MONITORING_ENABLED=true
+  #     - XPACK_MONITORING_COLLECTION_ENABLED=true
+  #     - SERVER_NAME=kibana
+    
+
+######Application###############################
+  # app_frontend_recherche:
+  #   build: "./services/frontend-recherche"
+  #   container_name: app_frontend_recherche
+  #   ports:
+  #     - "8084:4200"
+  #   networks:
+  #     - t_one_network
+
+  # app_ia_decideur:
+  #   build: "./services/IA-Decideur"
+  #   container_name: app_ia_decideur
+  #   command: python main.py
+  #   depends_on:
+  #     - redis_server
+  #     - rabbitmq_server
+  #   ports:
+  #     - 8085:5000
+  #   networks:
+  #     - t_one_network
+  #   environment:
+  #     - REDIS_SERVEUR_HOST=redis_server
+  #     - REDIS_SERVEUR_PORT=6379
+  #     - FLASK_ENV=development
+  #     - PORT=5000
+
+  # app_indexeur:
+  #   build: "./services/indexeur"
+  #   container_name: app_indexeur
+  #   depends_on:
+  #     - rabbitmq_server
+  #     - redis_server
+  #   environment:
+  #     - REDIS_HOST=redis_server
+  #     - REDIS_PORT=6379
+  #   ports:
+  #     - "8086:3000"
+  #   networks:
+  #     - t_one_network
+
+networks:
+  t_one_network:
+          
+

@@ -1,0 +1,137 @@
+version: "3"
+services:
+############## Serveurs et outils#########################
+
+
+  ##API Gateway to get access to backend##
+  krakend_api_gateway_server:
+    image: devopsfaith/krakend
+    container_name: krakend_api_gateway_server
+    hostname: krakend_api_gateway_server
+    ports:
+      - 8080:8080
+      - 1234:1234
+      - 8090:8090
+    networks:
+      - t_one_network
+    volumes:
+      - "./serveur/krakend/:/etc/krakend/"
+
+##SSO Serveur##
+  keycloak_server:
+    image: jboss/keycloak
+    container_name: keycloak_server
+    ports:
+      - '8081:8080'
+      - "9990:9990"
+    networks:
+      - t_one_network
+    environment:
+      - KEYCLOAK_USER=admin
+      - KEYCLOAK_PASSWORD=admin
+      - KEYCLOAK_IMPORT=/tmp/realm-yaba-in.json
+    volumes:
+      - "./serveur/keycloak/realm-yaba-in.json:/tmp/realm-yaba-in.json"
+      - "./serveur/keycloak/data/:/opt/jboss/keycloak/standalone/data/"
+    command: [
+      '-Dkeycloak.migration.strategy=IGNORE_EXISTING',
+    ]
+
+
+  neo4j_server:
+    image: neo4j:4.4.7
+    container_name: neo4j_server
+    depends_on:
+      - keycloak_server
+    ports:
+      - 7474:7474
+      - 7687:7687
+    networks:
+      - t_one_network
+    environment:
+      - NEO4J_apoc_export_file_enabled=true
+      - NEO4J_apoc_import_file_enabled=true
+      - NEO4J_dbms_security_procedures_unrestricted=apoc.*,algo.*
+      - NEO4J_dbms_memory_heap_initial__size=512m
+      - NEO4J_dbms_memory_heap_max__size=2G
+      - NEO4J_apoc_uuid_enabled=true
+      - NEO4J_dbms_default__listen__address=0.0.0.0
+      - NEO4J_dbms_allow__upgrade=true
+      - NEO4J_dbms_default__database=neo4j
+
+      - NEO4J_AUTH=neo4j/neo4j_pass
+
+      - NEO4J_ACCEPT_LICENSE_AGREEMENT=yes
+      - NEO4J_dbms_connector_bolt_advertised__address=neo4j_server:7687
+      - NEO4J_apoc_trigger_enabled=true
+      - NEO4J_dbms_security_authentication__providers=oidc-keycloak,native
+      - NEO4J_dbms_security_authorization__providers=oidc-keycloak,native
+      - NEO4J_dbms_security_oidc_keycloak_display__name=Keycloak
+      - NEO4J_dbms_security_oidc_keycloak_.auth__flow=pkce
+      - NEO4J_dbms_security_oidc_keycloak_well__known__discovery__uri=http://keycloak_server:8080/realms/Yaba-In/.well-known/openid-configuration
+      # We need to use 127.0.0.1 since the Neo4j browser is sending additional headers
+      # such as `sentry-trace` causing CORS issues with the Keycloak server
+      - NEO4J_dbms_security_oidc_keycloak_auth__endpoint=http://keycloak_server:8080/realms/Yaba-In/protocol/openid-connect/auth
+      - NEO4J_dbms_security_oidc_keycloak_token__endpoint=http://keycloak_server:8080/realms/Yaba-In/protocol/openid-connect/token
+      - NEO4J_dbms_security_oidc_keycloak_params=client_id=neo4j-sso;response_type=code;scope=openid email roles
+      - NEO4J_dbms_security_oidc_keycloak_audience=account
+      # The issuer setting has to match the `iss` claim of the token
+      - NEO4J_dbms_security_oidc_keycloak_issuer=http://keycloak_server:8080/realms/Yaba-In
+      - NEO4J_dbms_security_oidc_keycloak_client__id=neo4j-sso
+      - NEO4J_dbms_security_oidc_keycloak_claims_username=preferred_username
+      - NEO4J_dbms_security_oidc_keycloak_claims_groups=roles
+
+    # volumes:
+      # - "./serveur/neo4j/data:/data"
+      # - "./serveur/neo4j/logs:/logs"
+
+
+  
+
+  # rabbitmq_server:
+  #   image: rabbitmq:3-management-alpine
+  #   container_name: rabbitmq_server
+  #   ports:
+  #     - 5672:5672
+  #     - 15672:15672
+  #   networks:
+  #     - t_one_network
+    #volumes:
+      #- "./serveur/rabbitmq/data/:/var/lib/rabbitmq"
+      #- "./serveur/rabbitmq/log/:/var/log/rabbitmiq"
+  
+  # redis_server:
+  #   image: "redis:alpine"
+  #   container_name: redis_server
+  #   ports:
+  #     - "6379:6379"
+  #   networks: 
+  #     - t_one_network
+  #   volumes: 
+  #     - "./serveur/redis/data/:/data"
+  #   command:
+  #     # Save if 100 keys are added in every 10 seconds
+  #     - "--save 10 100"
+
+  # redis_visualizer: # redis db visualization dashboard
+  #   container_name: redis_visualizer
+  #   depends_on:
+  #     - redis_server
+  #   image: redislabs/redisinsight
+  #   ports:
+  #     - 8082:8001
+  #   networks: 
+  #     - t_one_network
+    #volumes:
+    #  - ./serveur/redis/visualizer/:/db
+
+
+  
+
+######Application###############################
+ 
+
+networks:
+  t_one_network:
+          
+
