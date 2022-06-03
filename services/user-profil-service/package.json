@@ -1,0 +1,37 @@
+{
+  "name": "user-profil-service",
+  "version": "1.0.0",
+  "description": "Service de gestion de profil utilisateur avec une base de données graph (Neo4J)",
+  "main": "src/main.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yabain/t-one-user-profil-service.git"
+  },
+  "keywords": [
+    "Neo4J",
+    "Rest",
+    "API",
+    "User",
+    "Account"
+  ],
+  "author": "Cédric Nguendap",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/yabain/t-one-user-profil-service/issues"
+  },
+  "homepage": "https://github.com/yabain/t-one-user-profil-service#readme",
+  "devDependencies": {
+    "@types/express": "^4.17.13",
+    "@types/node": "^17.0.39",
+    "nodemon": "^2.0.16",
+    "typescript": "^4.7.2"
+  },
+  "dependencies": {
+    "@types/amqplib": "^0.8.2",
+    "amqplib": "^0.10.0",
+    "express": "^4.18.1"
+  }
+}

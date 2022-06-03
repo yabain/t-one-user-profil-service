@@ -84,46 +84,43 @@ services:
     # volumes:
       # - "./serveur/neo4j/data:/data"
       # - "./serveur/neo4j/logs:/logs"
-
-
+      
+  rabbitmq_server:
+    image: rabbitmq:3-management-alpine
+    container_name: rabbitmq_server
+    ports:
+      - 5672:5672
+      - 15672:15672
+    networks:
+      - t_one_network
+    volumes:
+      - "./serveur/rabbitmq/data/:/var/lib/rabbitmq"
+      - "./serveur/rabbitmq/log/:/var/log/rabbitmiq"
   
+  redis_server:
+    image: "redis:alpine"
+    container_name: redis_server
+    ports:
+      - "6379:6379"
+    networks: 
+      - t_one_network
+    volumes: 
+      - "./serveur/redis/data/:/data"
+    command:
+      # Save if 100 keys are added in every 10 seconds
+      - "--save 10 100"
 
-  # rabbitmq_server:
-  #   image: rabbitmq:3-management-alpine
-  #   container_name: rabbitmq_server
-  #   ports:
-  #     - 5672:5672
-  #     - 15672:15672
-  #   networks:
-  #     - t_one_network
-    #volumes:
-      #- "./serveur/rabbitmq/data/:/var/lib/rabbitmq"
-      #- "./serveur/rabbitmq/log/:/var/log/rabbitmiq"
-  
-  # redis_server:
-  #   image: "redis:alpine"
-  #   container_name: redis_server
-  #   ports:
-  #     - "6379:6379"
-  #   networks: 
-  #     - t_one_network
-  #   volumes: 
-  #     - "./serveur/redis/data/:/data"
-  #   command:
-  #     # Save if 100 keys are added in every 10 seconds
-  #     - "--save 10 100"
-
-  # redis_visualizer: # redis db visualization dashboard
-  #   container_name: redis_visualizer
-  #   depends_on:
-  #     - redis_server
-  #   image: redislabs/redisinsight
-  #   ports:
-  #     - 8082:8001
-  #   networks: 
-  #     - t_one_network
-    #volumes:
-    #  - ./serveur/redis/visualizer/:/db
+  redis_visualizer: # redis db visualization dashboard
+    container_name: redis_visualizer
+    depends_on:
+      - redis_server
+    image: redislabs/redisinsight
+    ports:
+      - 8082:8001
+    networks: 
+      - t_one_network
+    volumes:
+     - ./serveur/redis/visualizer/:/db
 
 
   
