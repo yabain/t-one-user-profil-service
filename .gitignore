@@ -1,7 +1,27 @@
+#####Serveur configuration###
 
-/serveur/
+#keycloak
+/serveur/keycloak/*
+!/serveur/keycloak/realm-yaba-in.json
 
-/services/frontend-recherche/*
+#krakend
+/serveur/krakend/*
+!serveur/krakend/krakend.json
+
+#mysql
+/serveur/mysql/*
+
+#neo4j
+/serveur/neo4j/*
+
+#rabbitmq
+/serveur/rabbitmq/*
+
+#redis
+/serveur/redis/*
+
+#### Micro-Service App config###
+/services/user-profil-service/*
 !/services/frontend-recherche/Dockerfile
 
 /services/IA-Decideur/*

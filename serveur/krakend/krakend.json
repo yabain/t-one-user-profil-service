@@ -1,0 +1,93 @@
+{
+  "version": 2,
+  "extra_config": {
+    "github_com/devopsfaith/krakend-cors": {
+      "allow_origins": [
+        "*"
+      ],
+      "expose_headers": [
+        "Content-Length"
+      ],
+      "max_age": "12h",
+      "allow_methods": [
+        "GET",
+        "HEAD",
+        "POST"
+      ]
+    }
+  },
+  "timeout": "3000ms",
+  "cache_ttl": "300s",
+  "output_encoding": "json",
+  "name": "Y-Legal",
+  "endpoints": [
+    {
+      "endpoint": "/index_file",
+      "method": "POST",
+      "output_encoding": "negotiate",
+      "extra_config": {},
+      "backend": [
+        {
+          "url_pattern": "/predict",
+          "encoding": "json",
+          "method": "POST",
+          "extra_config": {},
+          "disable_host_sanitize": true,
+          "host": [
+            "http://app_ia_decideur:5000"
+          ]
+        }
+      ]
+    },
+    {
+      "endpoint": "/search",
+      "method": "POST",
+      "output_encoding": "json",
+      "extra_config": {},
+      "querystring_params": [
+        "q"
+      ],
+      "backend": [
+        {
+          "url_pattern": "/search",
+          "encoding": "json",
+          "sd": "static",
+          "method": "POST",
+          "extra_config": {},
+          "host": [
+            "http://app_indexeur:3000"
+          ],
+          "disable_host_sanitize": true
+        },
+        {
+          "url_pattern": "/",
+          "encoding": "json",
+          "sd": "static",
+          "method": "GET",
+          "extra_config": {},
+          "host": [
+            "http://app_indexeur:3000"
+          ],
+          "disable_host_sanitize": true
+        }
+      ]
+    },
+    
+    {
+      "endpoint": "/redis-visualizer",
+      "method": "GET",
+      "output_encoding": "negotiate",
+      "extra_config": {},
+      "querystring_params": [],
+      "backend": [
+        {
+          "url_pattern": "/",
+          "encoding": "no-op",
+          "sd": "static",
+          "method": "GET",
+          "extra_config": {}
+        }
+      ]
+    }
+  ]
+}
